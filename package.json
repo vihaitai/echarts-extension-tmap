@@ -1,0 +1,37 @@
+{
+  "name": "echarts-extension-tmap",
+  "version": "1.0.0",
+  "main": "dist/echarts-extension-tmap.min.js",
+  "module": "dist/echarts-extension-tmap.esm.js",
+  "files": [
+    "dist",
+    "src",
+    "index.js",
+    "index.d.ts",
+    "export.js",
+    "export.d.ts",
+    "types.d.ts",
+    "examples/*.html"
+  ],
+  "types": "types.d.ts",
+  "scripts": {
+    "dev": "rollup -wc --bundleConfigAsCjs --environment NODE_ENV:development",
+    "build": "rollup -c --bundleConfigAsCjs --environment NODE_ENV:production",
+    "postbuild": "node build/post-build.js",
+    "release": "npm run build && npm run generate:example",
+    "generate:example": "node build/generateExamples.js"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.21.8",
+    "@babel/preset-env": "^7.21.5",
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.2",
+    "@rollup/plugin-terser": "^0.4.1",
+    "@types/echarts": "^4.9.17",
+    "chalk": "^4.1.2",
+    "echarts": "^5.4.2",
+    "rollup": "^3.21.7"
+  }
+}

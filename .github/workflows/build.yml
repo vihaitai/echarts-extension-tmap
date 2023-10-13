@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: https://registry.npmjs.org/
+
+      - name: Cache node modules
+        id: cache-dep
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-dep.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Build from source
+        run: npm run build
