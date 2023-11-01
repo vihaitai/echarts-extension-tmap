@@ -322,7 +322,7 @@ var TMapView = {
       };
       api.dispatchAction(actionParams);
     };
-    if (this.__moveHandlerPerformance) {
+    if (this._moveHandlerPerformance) {
       tmap.off("move", this._moveHandlerPerformance);
     }
     // 移除上一次监听
@@ -336,25 +336,29 @@ var TMapView = {
       tmap.off("moveend", this._moveEndHandler);
       tmap.off("zoomend", this._moveEndHandler);
     }
-    this._moveHandler = moveHandler;
     if (!renderOnMoving) {
-      tmap.on("movestart", this._moveStartHandler = function () {
+      this._moveStartHandler = function () {
         setTimeout(function () {
           tmapModel.setEChartsLayerVisibility(false);
         }, 0);
-      });
+      };
+      tmap.on("movestart", this._moveStartHandler);
     } else {
       this._moveHandlerPerformance = throttle(moveHandler, 14, true);
       tmap.on("move", this._moveHandlerPerformance);
     }
-    var moveEndHandler = this._moveEndHandler = function (e) {
+    // 移动结束渲染
+    this._moveEndHandler = function (e) {
       moveHandler();
-      setTimeout(function () {
-        tmapModel.setEChartsLayerVisibility(true);
-      }, 20);
+      // 展示隐藏图层
+      if (!renderOnMoving) {
+        setTimeout(function () {
+          tmapModel.setEChartsLayerVisibility(true);
+        }, 0);
+      }
     };
-    tmap.on("moveend", moveEndHandler);
-    tmap.on("zoomend", moveEndHandler);
+    tmap.on("moveend", this._moveEndHandler);
+    tmap.on("zoomend", this._moveEndHandler);
     if (resizeEnable) {
       var resizeHandler = function resizeHandler() {
         getInstanceByDom(api.getDom()).resize();
@@ -380,7 +384,6 @@ var TMapView = {
         component.coordinateSystem.setTMap(null);
         component.coordinateSystem = null;
       }
-      delete this._moveHandler;
       delete this._resizeHandler;
       delete this._moveStartHandler;
       delete this._moveEndHandler;

@@ -1,116 +1,109 @@
+/*!
+ * echarts-extension-tmap 
+ * @version 1.0.0
+ * @author undefined
+ * 
+ * MIT License
+ * 
+ * Copyright (c) 2019-2022 Zhongxiang Wang
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * 
+ */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('echarts/lib/echarts')) :
   typeof define === 'function' && define.amd ? define(['exports', 'echarts/lib/echarts'], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.echarts = global.echarts || {}, global.echarts.amap = {}), global.echarts));
 })(this, (function (exports, echarts) { 'use strict';
 
-  const ecVer = echarts.version.split('.');
-
-  const isNewEC = ecVer[0] > 4;
-
-  const COMPONENT_TYPE = 'tmap';
-
+  var ecVer = echarts.version.split('.');
+  var isNewEC = ecVer[0] > 4;
+  var COMPONENT_TYPE = 'tmap';
   function v2Equal(a, b) {
-    return a && b && a[0] === b[0] && a[1] === b[1]
+    return a && b && a[0] === b[0] && a[1] === b[1];
   }
-
-  let logMap = {};
-
+  var logMap = {};
   function logWarn(tag, msg, once) {
-    const log = `[ECharts][Extension][TMap]${tag ? ' ' + tag + ':' : ''} ${msg}`;
+    var log = "[ECharts][Extension][TMap]".concat(tag ? ' ' + tag + ':' : '', " ").concat(msg);
     once && logMap[log] || console.warn(log);
     once && (logMap[log] = true);
   }
-
   function clearLogMap() {
     logMap = {};
   }
 
   function dataToCoordSize(dataSize, dataItem) {
     dataItem = dataItem || [0, 0];
-    return echarts.util.map(
-      [0, 1],
-      function(dimIdx) {
-        const val = dataItem[dimIdx];
-        const halfSize = dataSize[dimIdx] / 2;
-        const p1 = [];
-        const p2 = [];
-        p1[dimIdx] = val - halfSize;
-        p2[dimIdx] = val + halfSize;
-        p1[1 - dimIdx] = p2[1 - dimIdx] = dataItem[1 - dimIdx];
-        return Math.abs(
-          this.dataToPoint(p1)[dimIdx] - this.dataToPoint(p2)[dimIdx]
-        )
-      },
-      this
-    )
+    return echarts.util.map([0, 1], function (dimIdx) {
+      var val = dataItem[dimIdx];
+      var halfSize = dataSize[dimIdx] / 2;
+      var p1 = [];
+      var p2 = [];
+      p1[dimIdx] = val - halfSize;
+      p2[dimIdx] = val + halfSize;
+      p1[1 - dimIdx] = p2[1 - dimIdx] = dataItem[1 - dimIdx];
+      return Math.abs(this.dataToPoint(p1)[dimIdx] - this.dataToPoint(p2)[dimIdx]);
+    }, this);
   }
-
-  const excludedOptions = [
-    'echartsLayerInteractive',
-    'renderOnMoving',
-    'largeMode',
-    'layers'
-  ];
-
+  var excludedOptions = ['echartsLayerInteractive', 'renderOnMoving', 'largeMode', 'layers'];
   function TMapCoordSys(tmap, api) {
     this._tmap = tmap;
     this._api = api;
     this._mapOffset = [0, 0];
   }
-
-  const TMapCoordSysProto = TMapCoordSys.prototype;
-
-  TMapCoordSysProto.setZoom = function(zoom) {
+  var TMapCoordSysProto = TMapCoordSys.prototype;
+  TMapCoordSysProto.setZoom = function (zoom) {
     this._zoom = zoom;
   };
-
-  TMapCoordSysProto.setCenter = function(center) {
-    const lnglat = new T.LngLat(center[0], center[1]);
+  TMapCoordSysProto.setCenter = function (center) {
+    var lnglat = new T.LngLat(center[0], center[1]);
     this._center = this._tmap.lngLatToContainerPoint(lnglat);
   };
-
-  TMapCoordSysProto.setMapOffset = function(mapOffset) {
+  TMapCoordSysProto.setMapOffset = function (mapOffset) {
     this._mapOffset = mapOffset;
   };
-
-  TMapCoordSysProto.setTMap = function(tmap) {
+  TMapCoordSysProto.setTMap = function (tmap) {
     this._tmap = tmap;
   };
-
-  TMapCoordSysProto.getTMap = function() {
-    return this._tmap
+  TMapCoordSysProto.getTMap = function () {
+    return this._tmap;
   };
-
-  TMapCoordSysProto.dataToPoint = function(data) {
-    const lnglat = new T.LngLat(data[0], data[1]);
-    const px = this._tmap.lngLatToContainerPoint(lnglat);
-    const mapOffset = this._mapOffset;
-    return [px.x - mapOffset[0], px.y - mapOffset[1]]
+  TMapCoordSysProto.dataToPoint = function (data) {
+    var lnglat = new T.LngLat(data[0], data[1]);
+    var px = this._tmap.lngLatToContainerPoint(lnglat);
+    var mapOffset = this._mapOffset;
+    return [px.x - mapOffset[0], px.y - mapOffset[1]];
   };
-
-  TMapCoordSysProto.pointToData = function(pt) {
-    const mapOffset = this._mapOffset;
-    const lnglat = this._tmap.containerPointToLngLat(
-      new T.Point(
-        pt[0] + mapOffset[0],
-        pt[1] + mapOffset[1]
-      )
-    );
-    return [lnglat.lng, lnglat.lat]
+  TMapCoordSysProto.pointToData = function (pt) {
+    var mapOffset = this._mapOffset;
+    var lnglat = this._tmap.containerPointToLngLat(new T.Point(pt[0] + mapOffset[0], pt[1] + mapOffset[1]));
+    return [lnglat.lng, lnglat.lat];
   };
-
-  TMapCoordSysProto.getViewRect = function() {
-    const api = this._api;
-    return new echarts.graphic.BoundingRect(0, 0, api.getWidth(), api.getHeight())
+  TMapCoordSysProto.getViewRect = function () {
+    var api = this._api;
+    return new echarts.graphic.BoundingRect(0, 0, api.getWidth(), api.getHeight());
   };
-
-  TMapCoordSysProto.getRoamTransform = function() {
-    return echarts.matrix.create()
+  TMapCoordSysProto.getRoamTransform = function () {
+    return echarts.matrix.create();
   };
-
-  TMapCoordSysProto.prepareCustoms = function() {
-    const rect = this.getViewRect();
+  TMapCoordSysProto.prepareCustoms = function () {
+    var rect = this.getViewRect();
     return {
       coordSys: {
         type: COMPONENT_TYPE,
@@ -123,15 +116,14 @@
         coord: echarts.util.bind(this.dataToPoint, this),
         size: echarts.util.bind(dataToCoordSize, this) // TODO: FIXME
       }
-    }
+    };
   };
 
-  TMapCoordSysProto.convertToPixel = function(ecModel, finder, value) {
+  TMapCoordSysProto.convertToPixel = function (ecModel, finder, value) {
     // here we don't use finder as only one tmap component is allowed
     return this.dataToPoint(value);
   };
-
-  TMapCoordSysProto.convertFromPixel = function(ecModel, finder, value) {
+  TMapCoordSysProto.convertFromPixel = function (ecModel, finder, value) {
     // here we don't use finder as only one tmap component is allowed
     return this.pointToData(value);
   };
@@ -141,27 +133,27 @@
   //   return this._tmap.getBounds().contains(this.pointToData(point));
   // }
 
-  TMapCoordSys.create = function(ecModel, api) {
-    let tmapCoordSys;
-    ecModel.eachComponent(COMPONENT_TYPE, function(tmapModel) {
+  TMapCoordSys.create = function (ecModel, api) {
+    var tmapCoordSys;
+    ecModel.eachComponent(COMPONENT_TYPE, function (tmapModel) {
       if (typeof T === 'undefined') {
-        throw new Error('T api is not loaded')
+        throw new Error('T api is not loaded');
       }
       if (tmapCoordSys) {
-        throw new Error('Only one tmap component is allowed')
+        throw new Error('Only one tmap component is allowed');
       }
-      let tmap = tmapModel.getTMap();
-      const echartsLayerInteractive = tmapModel.get('echartsLayerInteractive');
+      var tmap = tmapModel.getTMap();
+      var echartsLayerInteractive = tmapModel.get('echartsLayerInteractive');
       if (!tmap) {
-        const root = api.getDom();
-        const painter = api.getZr().painter;
-        const viewportRoot = painter.getViewportRoot();
+        var root = api.getDom();
+        var painter = api.getZr().painter;
+        var viewportRoot = painter.getViewportRoot();
         viewportRoot.className = COMPONENT_TYPE + '-ec-layer';
         // PENDING not hidden?
         viewportRoot.style.visibility = 'hidden';
-        const className = 'ec-extension-' + COMPONENT_TYPE;
+        var className = 'ec-extension-' + COMPONENT_TYPE;
         // Not support IE8
-        let tmapRoot = root.querySelector('.' + className);
+        var tmapRoot = root.querySelector('.' + className);
         if (tmapRoot) {
           // Reset viewport left and top, which will be changed
           // in moving handler in tmapView
@@ -173,24 +165,20 @@
         tmapRoot.className = className;
         tmapRoot.style.cssText = 'position:absolute;top:0;left:0;bottom:0;right:0;';
         root.appendChild(tmapRoot);
-
-        const options = echarts.util.clone(tmapModel.get());
+        var options = echarts.util.clone(tmapModel.get());
         // delete excluded options
-        echarts.util.each(excludedOptions, function(key) {
+        echarts.util.each(excludedOptions, function (key) {
           delete options[key];
         });
-
         tmap = new T.Map(tmapRoot, options);
-
-        const nativeSetMapStyle = tmap.setStyle;
+        var nativeSetMapStyle = tmap.setStyle;
         tmap.setStyle = function () {
-          let style = arguments[0];
+          var style = arguments[0];
           logWarn('style', style);
           nativeSetMapStyle.apply(this, arguments);
           tmapModel.__mapStyle = style;
         };
-
-        setTimeout(() => {
+        setTimeout(function () {
           tmapRoot.appendChild(viewportRoot);
           viewportRoot.style.visibility = '';
           viewportRoot.style.zIndex = 1000;
@@ -200,47 +188,42 @@
         tmapModel.setEChartsLayer(viewportRoot);
 
         // Override
-        painter.getViewportRootOffset = function() {
-          return { offsetLeft: 0, offsetTop: 0 }
+        painter.getViewportRootOffset = function () {
+          return {
+            offsetLeft: 0,
+            offsetTop: 0
+          };
         };
       }
-
-      const oldEChartsLayerInteractive = tmapModel.__echartsLayerInteractive;
+      var oldEChartsLayerInteractive = tmapModel.__echartsLayerInteractive;
       if (oldEChartsLayerInteractive !== echartsLayerInteractive) {
         tmapModel.setEChartsLayerInteractive(echartsLayerInteractive);
         tmapModel.__echartsLayerInteractive = echartsLayerInteractive;
       }
-
-      const center = tmapModel.get('center');
-      const zoom = tmapModel.get('zoom');
+      var center = tmapModel.get('center');
+      var zoom = tmapModel.get('zoom');
       if (center && zoom) {
-        const tmapCenter = tmap.getCenter();
-        const tmapZoom = tmap.getZoom();
-        const centerOrZoomChanged = tmapModel.centerOrZoomChanged(
-          [tmapCenter.lng, tmapCenter.lat],
-          tmapZoom
-        );
+        var tmapCenter = tmap.getCenter();
+        var tmapZoom = tmap.getZoom();
+        var centerOrZoomChanged = tmapModel.centerOrZoomChanged([tmapCenter.lng, tmapCenter.lat], tmapZoom);
         if (centerOrZoomChanged) {
           tmap.centerAndZoom(new T.LngLat(center[0], center[1]), zoom);
         }
       }
 
       // update map style(#13)
-      const originalMapStyle = tmapModel.__mapStyle;
-      const newMapStyle = tmapModel.get('mapStyle');
+      var originalMapStyle = tmapModel.__mapStyle;
+      var newMapStyle = tmapModel.get('mapStyle');
       if (originalMapStyle !== newMapStyle) {
         tmap.setStyle(tmapModel.__mapStyle = newMapStyle);
       }
-
       tmapCoordSys = new TMapCoordSys(tmap, api);
       tmapCoordSys.setMapOffset(tmapModel.__mapOffset || [0, 0]);
       tmapCoordSys.setZoom(zoom);
       tmapCoordSys.setCenter(center);
-
       tmapModel.coordinateSystem = tmapCoordSys;
     });
-
-    ecModel.eachSeries(function(seriesModel) {
+    ecModel.eachSeries(function (seriesModel) {
       if (seriesModel.get('coordinateSystem') === COMPONENT_TYPE) {
         // inject coordinate system
         seriesModel.coordinateSystem = tmapCoordSys;
@@ -248,60 +231,47 @@
     });
 
     // return created coordinate systems
-    return tmapCoordSys && [tmapCoordSys]
+    return tmapCoordSys && [tmapCoordSys];
   };
-
   TMapCoordSysProto.dimensions = TMapCoordSys.dimensions = ['lng', 'lat'];
-
   TMapCoordSysProto.type = COMPONENT_TYPE;
 
-  const TMapModel = {
+  var TMapModel = {
     type: COMPONENT_TYPE,
-
-    setTMap(tmap) {
+    setTMap: function setTMap(tmap) {
       this.__tmap = tmap;
     },
-
-    getTMap() {
-      return this.__tmap
+    getTMap: function getTMap() {
+      return this.__tmap;
     },
-
-    setRoot(root) {
+    setRoot: function setRoot(root) {
       this.__root = root;
     },
-
-    getRoot(root) {
-      return this.__root
+    getRoot: function getRoot(root) {
+      return this.__root;
     },
-
-    setEChartsLayer(layer) {
+    setEChartsLayer: function setEChartsLayer(layer) {
       this.__echartsLayer = layer;
     },
-
-    getEChartsLayer() {
-      return this.__echartsLayer
+    getEChartsLayer: function getEChartsLayer() {
+      return this.__echartsLayer;
     },
-
-    setEChartsLayerVisibility(visible) {
+    setEChartsLayerVisibility: function setEChartsLayerVisibility(visible) {
       this.__echartsLayer.style.display = visible ? 'block' : 'none';
     },
-
     // FIXME: NOT SUPPORT <= IE 10
-    setEChartsLayerInteractive(interactive) {
+    setEChartsLayerInteractive: function setEChartsLayerInteractive(interactive) {
       this.option.echartsLayerInteractive = !!interactive;
       this.__echartsLayer.style.pointerEvents = interactive ? 'auto' : 'none';
     },
-
-    setCenterAndZoom(center, zoom) {
+    setCenterAndZoom: function setCenterAndZoom(center, zoom) {
       this.option.center = center;
       this.option.zoom = zoom;
     },
-
-    centerOrZoomChanged(center, zoom) {
-      const option = this.option;
-      return !(v2Equal(center, option.center) && zoom === option.zoom)
+    centerOrZoomChanged: function centerOrZoomChanged(center, zoom) {
+      var option = this.option;
+      return !(v2Equal(center, option.center) && zoom === option.zoom);
     },
-
     defaultOption: {
       center: [116.397428, 39.90923],
       zoom: 5,
@@ -309,65 +279,52 @@
       // extension specific options
       echartsLayerInteractive: true,
       renderOnMoving: false,
-      largeMode: false,
+      largeMode: false
     }
   };
+  var TMapModel$1 = isNewEC ? echarts.ComponentModel.extend(TMapModel) : TMapModel;
 
-  var TMapModel$1 = isNewEC
-    ? echarts.ComponentModel.extend(TMapModel)
-    : TMapModel;
-
-  const TMapView = {
+  var TMapView = {
     type: COMPONENT_TYPE,
-
-    init() {
+    init: function init() {
       this._isFirstRender = true;
     },
-
-    render(tmapModel, ecModel, api) {
-      let rendering = true;
-
-      const tmap = tmapModel.getTMap();
-      const viewportRoot = api.getZr().painter.getViewportRoot();
-      const offsetEl = tmapModel.getRoot();
-      const coordSys = tmapModel.coordinateSystem;
-
-      const renderOnMoving = tmapModel.get("renderOnMoving");
-      const resizeEnable = tmapModel.get("resizeEnable");
-      const largeMode = tmapModel.get("largeMode");
-
-      let moveHandler = function (e) {
+    render: function render(tmapModel, ecModel, api) {
+      var rendering = true;
+      var tmap = tmapModel.getTMap();
+      var viewportRoot = api.getZr().painter.getViewportRoot();
+      var offsetEl = tmapModel.getRoot();
+      var coordSys = tmapModel.coordinateSystem;
+      var renderOnMoving = tmapModel.get("renderOnMoving");
+      var resizeEnable = tmapModel.get("resizeEnable");
+      var largeMode = tmapModel.get("largeMode");
+      var moveHandler = function moveHandler(e) {
         if (rendering) {
           return;
         }
-
-        const offsetElStyle = offsetEl.style;
-        const mapOffset = [
-          -parseInt(offsetElStyle.left, 10) || 0,
-          -parseInt(offsetElStyle.top, 10) || 0,
-        ];
+        var offsetElStyle = offsetEl.style;
+        var mapOffset = [-parseInt(offsetElStyle.left, 10) || 0, -parseInt(offsetElStyle.top, 10) || 0];
         // only update style when map offset changed
-        const viewportRootStyle = viewportRoot.style;
-        const offsetLeft = mapOffset[0] + "px";
-        const offsetTop = mapOffset[1] + "px";
+        var viewportRootStyle = viewportRoot.style;
+        var offsetLeft = mapOffset[0] + "px";
+        var offsetTop = mapOffset[1] + "px";
         if (viewportRootStyle.left !== offsetLeft) {
           viewportRootStyle.left = offsetLeft;
         }
         if (viewportRootStyle.top !== offsetTop) {
           viewportRootStyle.top = offsetTop;
         }
-        coordSys.setMapOffset((tmapModel.__mapOffset = mapOffset));
-        const actionParams = {
+        coordSys.setMapOffset(tmapModel.__mapOffset = mapOffset);
+        var actionParams = {
           type: "tmapRoam",
           animation: {
             // compatible with ECharts 5.x
             // no delay for rendering but remain animation of elements
-            duration: 0,
-          },
+            duration: 0
+          }
         };
         api.dispatchAction(actionParams);
       };
-
       if (this._moveHandlerPerformance) {
         tmap.off("move", this._moveHandlerPerformance);
       }
@@ -382,9 +339,8 @@
         tmap.off("moveend", this._moveEndHandler);
         tmap.off("zoomend", this._moveEndHandler);
       }
-
       if (!renderOnMoving) {
-        this._moveStartHandler = () => {
+        this._moveStartHandler = function () {
           setTimeout(function () {
             tmapModel.setEChartsLayerVisibility(false);
           }, 0);
@@ -395,7 +351,7 @@
         tmap.on("move", this._moveHandlerPerformance);
       }
       // 移动结束渲染
-      this._moveEndHandler = (e) => {
+      this._moveEndHandler = function (e) {
         moveHandler();
         // 展示隐藏图层
         if (!renderOnMoving) {
@@ -406,25 +362,22 @@
       };
       tmap.on("moveend", this._moveEndHandler);
       tmap.on("zoomend", this._moveEndHandler);
-
       if (resizeEnable) {
-        let resizeHandler = function () {
+        var resizeHandler = function resizeHandler() {
           echarts.getInstanceByDom(api.getDom()).resize();
         };
         if (largeMode) {
           resizeHandler = echarts.throttle(resizeHandler, 20, true);
         }
-        tmap.on("resize", (this._resizeHandler = resizeHandler));
+        tmap.on("resize", this._resizeHandler = resizeHandler);
       }
-
       this._isFirstRender = rendering = false;
     },
-
-    dispose() {
+    dispose: function dispose() {
       clearLogMap();
-      const component = this.__model;
+      var component = this.__model;
       if (component) {
-        const root = component.getRoot();
+        var root = component.getRoot();
         if (root) {
           root.innerHTML = "";
         }
@@ -439,9 +392,8 @@
         delete this._moveEndHandler;
         delete this._moveHandlerPerformance;
       }
-    },
+    }
   };
-
   var TMapView$1 = isNewEC ? echarts.ComponentView.extend(TMapView) : TMapView;
 
   var name = "echarts-extension-tmap";
@@ -449,19 +401,19 @@
 
   function install(registers) {
     // add coordinate system support for pie series for ECharts < 5.4.0
-    if (!isNewEC || (ecVer[0] == 5 && ecVer[1] < 4)) {
-      registers.registerLayout(function(ecModel) {
+    if (!isNewEC || ecVer[0] == 5 && ecVer[1] < 4) {
+      registers.registerLayout(function (ecModel) {
         ecModel.eachSeriesByType('pie', function (seriesModel) {
-          const coordSys = seriesModel.coordinateSystem;
-          const data = seriesModel.getData();
-          const valueDim = data.mapDimension('value');
+          var coordSys = seriesModel.coordinateSystem;
+          var data = seriesModel.getData();
+          var valueDim = data.mapDimension('value');
           if (coordSys && coordSys.type === COMPONENT_TYPE) {
-            const center = seriesModel.get('center');
-            const point = coordSys.dataToPoint(center);
-            const cx = point[0];
-            const cy = point[1];
+            var center = seriesModel.get('center');
+            var point = coordSys.dataToPoint(center);
+            var cx = point[0];
+            var cy = point[1];
             data.each(valueDim, function (value, idx) {
-              const layout = data.getItemLayout(idx);
+              var layout = data.getItemLayout(idx);
               layout.cx = cx;
               layout.cy = cy;
             });
@@ -470,30 +422,23 @@
       });
     }
     // Model
-    isNewEC
-      ? registers.registerComponentModel(TMapModel$1)
-      : registers.extendComponentModel(TMapModel$1);
+    isNewEC ? registers.registerComponentModel(TMapModel$1) : registers.extendComponentModel(TMapModel$1);
     // View
-    isNewEC
-      ? registers.registerComponentView(TMapView$1)
-      : registers.extendComponentView(TMapView$1);
+    isNewEC ? registers.registerComponentView(TMapView$1) : registers.extendComponentView(TMapView$1);
     // Coordinate System
     registers.registerCoordinateSystem(COMPONENT_TYPE, TMapCoordSys);
     // Action
-    registers.registerAction(
-      {
-        type: COMPONENT_TYPE + 'Roam',
-        event: COMPONENT_TYPE + 'Roam',
-        update: 'updateLayout'
-      },
-      function(payload, ecModel) {
-        ecModel.eachComponent(COMPONENT_TYPE, function(tmapModel) {
-          const tmap = tmapModel.getTMap();
-          const center = tmap.getCenter();
-          tmapModel.setCenterAndZoom([center.lng, center.lat], tmap.getZoom());
-        });
-      }
-    );
+    registers.registerAction({
+      type: COMPONENT_TYPE + 'Roam',
+      event: COMPONENT_TYPE + 'Roam',
+      update: 'updateLayout'
+    }, function (payload, ecModel) {
+      ecModel.eachComponent(COMPONENT_TYPE, function (tmapModel) {
+        var tmap = tmapModel.getTMap();
+        var center = tmap.getCenter();
+        tmapModel.setCenterAndZoom([center.lng, center.lat], tmap.getZoom());
+      });
+    });
   }
 
   /**
@@ -501,14 +446,10 @@
    * to avoid self-registered `CanvasRenderer` and `DataSetComponent` in Apache ECharts 5
    * but it's not compatible with echarts v4. Leave it to 2.0.
    */
-
   isNewEC ? echarts.use(install) : install(echarts);
 
   exports.name = name;
   exports.version = version;
 
-
-
-  exports.bundleVersion = '1698803841749';
-
 }));
+//# sourceMappingURL=echarts-extension-tmap.js.map
