@@ -368,7 +368,7 @@
         api.dispatchAction(actionParams);
       };
 
-      if (this.__moveHandlerPerformance) {
+      if (this._moveHandlerPerformance) {
         tmap.off("move", this._moveHandlerPerformance);
       }
       // 移除上一次监听
@@ -382,29 +382,30 @@
         tmap.off("moveend", this._moveEndHandler);
         tmap.off("zoomend", this._moveEndHandler);
       }
-      this._moveHandler = moveHandler;
 
       if (!renderOnMoving) {
-        tmap.on(
-          "movestart",
-          (this._moveStartHandler = function () {
-            setTimeout(function () {
-              tmapModel.setEChartsLayerVisibility(false);
-            }, 0);
-          })
-        );
+        this._moveStartHandler = () => {
+          setTimeout(function () {
+            tmapModel.setEChartsLayerVisibility(false);
+          }, 0);
+        };
+        tmap.on("movestart", this._moveStartHandler);
       } else {
         this._moveHandlerPerformance = echarts.throttle(moveHandler, 14, true);
         tmap.on("move", this._moveHandlerPerformance);
       }
-      const moveEndHandler = (this._moveEndHandler = function (e) {
+      // 移动结束渲染
+      this._moveEndHandler = (e) => {
         moveHandler();
-        setTimeout(function () {
-          tmapModel.setEChartsLayerVisibility(true);
-        }, 20);
-      });
-      tmap.on("moveend", moveEndHandler);
-      tmap.on("zoomend", moveEndHandler);
+        // 展示隐藏图层
+        if (!renderOnMoving) {
+          setTimeout(function () {
+            tmapModel.setEChartsLayerVisibility(true);
+          }, 0);
+        }
+      };
+      tmap.on("moveend", this._moveEndHandler);
+      tmap.on("zoomend", this._moveEndHandler);
 
       if (resizeEnable) {
         let resizeHandler = function () {
@@ -433,7 +434,6 @@
           component.coordinateSystem.setTMap(null);
           component.coordinateSystem = null;
         }
-        delete this._moveHandler;
         delete this._resizeHandler;
         delete this._moveStartHandler;
         delete this._moveEndHandler;
@@ -509,6 +509,6 @@
 
 
 
-  exports.bundleVersion = '1697167703858';
+  exports.bundleVersion = '1698803841749';
 
 }));
